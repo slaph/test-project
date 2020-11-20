@@ -1,9 +1,19 @@
-
+import os
 import random
-
 
 import requests
 
+
+def PhotoGetMax(att, numberofpic):
+    print('PGM')
+    max_pics = []
+    for i in range(numberofpic):
+        att2 = att[i]['photo']
+        id1 = att2['sizes']
+        d = sorted(list(set([i['height'] for i in id1])))
+        max_pics.append([j['url'] for j in id1 if j['height'] == d[-1]][0])
+
+    return max_pics
 
 
 class MessageSend:
@@ -15,7 +25,7 @@ class MessageSend:
         self.random_id = random.randint(-2147483648, +2147483648)
 
     def forMessage(self, attach):
-        s = self.PhotoGetMax(attach, len(attach))
+        s = PhotoGetMax(attach, len(attach))
         attachment = self.GetImageForServer(s)
         attachment = f"{','.join(attachment)}"
         return attachment
@@ -43,31 +53,22 @@ class MessageSend:
 
     def GetImageForServer(self, s):
         print('GIFS')
-        photoid = []
+        photo_ids = []
+        path = f"img{random.randint(1, 100)}.jpg"
         for i in s:
             p = requests.get(i)
-            out = open("img.jpg", "wb")
+            out = open(path, "wb")
             out.write(p.content)
             out.close()
             r = requests.post(
-                "https://api.vk.com/method/photos.getMessagesUploadServer", data=self.params) .json()['response']
+                "https://api.vk.com/method/photos.getMessagesUploadServer", data=self.params).json()['response']
             r = requests.post(r['upload_url'],
-                              files={'photo': open(f"img.jpg", 'rb')}).json()
+                              files={'photo': open(path, 'rb')}).json()
             params = [r["server"], r["photo"], r["hash"]]
             names = ["server", "photo", "hash"]
             saveToMessage1 = self.api('photos.saveMessagesPhoto', names, params)[0]
 
-            road = f"photo{saveToMessage1['owner_id']}_{saveToMessage1['id']}"
-            photoid.append(road)
-        return photoid
-
-    def PhotoGetMax(self, att, numberofpic):
-        print('PGM')
-        ddd = []
-        for i in range(numberofpic):
-            att2 = att[i]['photo']
-            id1 = att2['sizes']
-            d = sorted(list(set([i['height'] for i in id1])))
-            ddd.append([j['url'] for j in id1 if j['height'] == d[-1]][0])
-
-        return ddd
+            photo_id = f"photo{saveToMessage1['owner_id']}_{saveToMessage1['id']}"
+            photo_ids.append(photo_id)
+            os.remove(path)
+        return photo_ids
