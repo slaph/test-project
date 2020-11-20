@@ -51,7 +51,10 @@ def message(event):
         input_message = event["object"]['text'].lower()
         att = (event["object"])['attachments']
         if (len(att) == 0) and (len(event["object"]['fwd_messages']) != 0):
-            att = event["object"]['fwd_messages'][0]['attachments']
+            att = []
+            for mess in event["object"]['fwd_messages']:
+                for one_att in mess['attachments']:
+                    att.append(one_att)
             object_find_and_send(forid, rps, current, input_message, att)
         else:
             object_find_and_send(forid, rps, current, input_message, att)
