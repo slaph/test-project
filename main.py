@@ -2,10 +2,11 @@ import random
 import time
 from test_git import shikilist
 from test_git.api import MessageSend
+from test_git.api import LongPoll
 from datetime import datetime
 import threading
 
-api = MessageSend()
+lp = LongPoll()
 rps = 0
 cell_id_list = []
 
@@ -47,7 +48,7 @@ def message(event):
     start = time.time()
     if event['type'] == 'message_new':
         forid = event["object"]['peer_id']
-        current[event["object"]['from_id']] = 0
+        current[event["object"]['from_id']] = 0 # i forgot why it's here, shit
         input_message = event["object"]['text'].lower()
         att = (event["object"])['attachments']
         if (len(att) == 0) and (len(event["object"]['fwd_messages']) != 0):
@@ -65,13 +66,12 @@ def message(event):
 current = {}
 while True:
     try:
-        a = api.longPoll()
+        a = lp.longPoll()
         while len(a) == 0:
-            a = api.longPoll()
-        event = a[0]
-        print(event)
+            a = lp.longPoll()
+        event_raw = a[0]
         for i in range(1):
-            my_thread = threading.Thread(target=message, daemon=True, args=(event,))
+            my_thread = threading.Thread(target=message, daemon=True, args=(event_raw,))
             my_thread.start()
 
     except Exception as e:
