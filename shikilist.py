@@ -31,7 +31,7 @@ client_secret = "секрет приложения"
 def UpdateToken():
     print(1)
     url = "https://shikimori.one/oauth/token"
-    post_request = requests.post(url, headers={"User-Agent": "shap"}, params={"grant_type": "refresh_token",
+    post_request = requests.post(url, headers={"User-Agent": "YOU APP"}, params={"grant_type": "refresh_token",
                                                                                   "client_id": client_id,
                                                                                   "client_secret": client_secret,
                                                                                   "refresh_token": getToken(
@@ -40,7 +40,7 @@ def UpdateToken():
 
     with open(r'tokenShikimori.json', 'w') as f:
         tokens = {'access_token': post_request['access_token'], 'refresh_token': post_request['refresh_token']}
-        f.write(tokens)
+        f.write(json.dumps(tokens, indent=2))
         f.close()
 
 
