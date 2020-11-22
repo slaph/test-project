@@ -5,7 +5,6 @@ import requests
 
 
 def PhotoGetMax(att, numberofpic):
-    print('PGM')
     max_pics = []
     for i in range(numberofpic):
         att2 = att[i]['photo']
@@ -14,6 +13,33 @@ def PhotoGetMax(att, numberofpic):
         max_pics.append([j['url'] for j in id1 if j['height'] == d[-1]][0])
 
     return max_pics
+
+
+class LongPoll:
+    def __init__(self):
+        self.groupId = int
+        self.params = {'v': 5.124,
+                       'access_token': ''}
+        self.server, self.key, self.ts = self.get_LongPoll()
+
+    def get_LongPoll(self):
+        params = self.params
+        params['group_id'] = self.groupId
+        r = requests.post(
+            f"https://api.vk.com/method/groups.getLongPollServer", data=params).json()
+        r = r['response']
+        return r['server'], r['key'], r['ts']
+
+    def longPoll(self):
+        long_pool = f'{self.server}?act=a_check&key={self.key}&ts={self.ts}&wait=25'
+        r = requests.get(long_pool).json()
+        if ('failed' in r.keys()) and (int(r['failed']) == 2):
+            a, self.key, self.ts = self.get_LongPoll() # 'a' not need, idk how get only server\ts
+            long_pool = f'{self.server}?act=a_check&key={self.key}&ts={self.ts}&wait=25'
+            r = requests.get(long_pool).json()
+        if self.ts != str(r['ts']):
+            self.ts = str(r['ts'])
+        return r['updates']
 
 
 class MessageSend:
@@ -39,20 +65,7 @@ class MessageSend:
 
         return g['response']
 
-    def longPoll(self):
-        params = self.params
-        params['group_id'] = self.groupId
-        r = requests.post(
-            f"https://api.vk.com/method/groups.getLongPollServer", data=params).json()
-
-        lp = r['response']
-        long_pool = f'{lp["server"]}?act=a_check&key={lp["key"]}&ts={lp["ts"]}&wait=29'
-        r = requests.get(long_pool).json()
-
-        return [r['ts'], r['updates']]
-
     def GetImageForServer(self, s):
-        print('GIFS')
         photo_ids = []
         path = f"img{random.randint(1, 100)}.jpg"
         for i in s:
