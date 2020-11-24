@@ -1,8 +1,8 @@
 import random
 import time
-from test_git import shikilist
-from test_git.api import MessageSend
-from test_git.api import LongPoll
+import shikilist
+from api import MessageSend
+from api import LongPoll
 from datetime import datetime
 import threading
 
