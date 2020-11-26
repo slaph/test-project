@@ -1,8 +1,8 @@
 import random
 import time
-import shikilist
-from api import MessageSend
-from api import LongPoll
+from files import shikilist
+from files.api import MessageSend
+from files.api import LongPoll
 from datetime import datetime
 import threading
 
@@ -11,7 +11,7 @@ rps = 0
 cell_id_list = []
 
 
-def object_find_and_send(for_id, rpS, current_id, taken_message, attc):
+def object_find_and_send(for_id,from_who, rpS, current_id, taken_message, attc):
     Api = MessageSend()
     if int(for_id) > 2000000000:  # только для беседы
 
@@ -36,10 +36,13 @@ def object_find_and_send(for_id, rpS, current_id, taken_message, attc):
 
                 rpS += 5
             # if input_message1[0] == 'в список':
-
+        if taken_message == 'дз':
+            names = ['peer_id', 'attachment', 'random_id']
+            params = [for_id, Api.forMessage(attc,'doc',from_who), random.randint(-2147483648, +2147483648)]
+            Api.api('messages.send', names, params)
         if len(taken_message) == 0:
-            names = ['chat_id', 'attachment', 'random_id']
-            params = [str(for_id)[-1], Api.forMessage(attc), random.randint(-2147483648, +2147483648)]
+            names = ['peer_id', 'attachment', 'random_id']
+            params = [str(for_id)[-1], Api.forMessage(attc,'image',for_id), random.randint(-2147483648, +2147483648)]
             Api.api('messages.send', names, params)
 
 
@@ -48,17 +51,18 @@ def message(event):
     start = time.time()
     if event['type'] == 'message_new':
         forid = event["object"]['peer_id']
-        current[event["object"]['from_id']] = 0 # i forgot why it's here, shit
+        from_id = event["object"]['from_id']
+        #current[event["object"]['from_id']] = 0
         input_message = event["object"]['text'].lower()
         att = (event["object"])['attachments']
         if (len(att) == 0) and (len(event["object"]['fwd_messages']) != 0):
             att = []
-            for mess in event["object"]['fwd_messages']:
-                for one_att in mess['attachments']:
-                    att.append(one_att)
-            object_find_and_send(forid, rps, current, input_message, att)
+            for j in event["object"]['fwd_messages']:
+                for h in j['attachments']:
+                    att.append(h)
+            object_find_and_send(forid,0, rps, current, input_message, att)
         else:
-            object_find_and_send(forid, rps, current, input_message, att)
+            object_find_and_send(forid,from_id, rps, current, input_message, att)
         print(datetime.now())
         print(time.time() - start)
 
