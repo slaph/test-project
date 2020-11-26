@@ -13,37 +13,35 @@ cell_id_list = []
 
 def object_find_and_send(for_id,from_who, rpS, current_id, taken_message, attc):
     Api = MessageSend()
-    if int(for_id) > 2000000000:  # только для беседы
+    if taken_message.startswith(('добавить', 'в список', 'аниме', 'манга')) and from_who == 532831815:
+        input_message1 = taken_message.split()
+        if input_message1[0] == 'аниме' or input_message1[0] == 'манга':
+            cell_id_list.clear()
+            listtodo = [input_message1[0], '%20'.join(input_message1[1:])]
 
-        if taken_message.startswith(('добавить', 'в список', 'аниме', 'манга')) and rpS != 90:
-            input_message1 = taken_message.split()
-            if input_message1[0] == 'аниме' or input_message1[0] == 'манга':
-                cell_id_list.clear()
-                listtodo = [input_message1[0], '%20'.join(input_message1[1:])]
+            test = shikilist.ItemTitles(listtodo)
 
-                test = shikilist.ItemTitles(listtodo)
+            info, titleInMy, cell_id, titleId = test.getTitle()
+            current_id['object'] = titleId
+            inf_about_title = [*info['name'], str(info['description']), *list(titleInMy.values())]
+            cell_id_list.append(cell_id)
+            names = ['peer_id', 'message', 'random_id']  # для ответа в лс должно быть peer_id
 
-                info, titleInMy, cell_id, titleId = test.getTitle()
-                current_id['object'] = titleId
-                inf_about_title = [*info['name'], str(info['description']), *list(titleInMy.values())]
-                cell_id_list.append(cell_id)
-                names = ['chat_id', 'message', 'random_id']  # для ответа в лс должно быть peer_id
-
-                params = [str(for_id)[-1], '\n--------------------\n'.join(inf_about_title),
+            params = [for_id, '\n--------------------\n'.join(inf_about_title),
                           random.randint(-2147483648, +2147483648)]
 
-                Api.api('messages.send', names, params)
+            Api.api('messages.send', names, params)
 
-                rpS += 5
+            rpS += 5
             # if input_message1[0] == 'в список':
-        if taken_message == 'дз':
-            names = ['peer_id', 'attachment', 'random_id']
-            params = [for_id, Api.forMessage(attc,'doc',from_who), random.randint(-2147483648, +2147483648)]
-            Api.api('messages.send', names, params)
-        if len(taken_message) == 0:
-            names = ['peer_id', 'attachment', 'random_id']
-            params = [str(for_id)[-1], Api.forMessage(attc,'image',for_id), random.randint(-2147483648, +2147483648)]
-            Api.api('messages.send', names, params)
+    if taken_message.startswith('дз'):
+        names = ['peer_id', 'attachment', 'random_id']
+        params = [for_id, Api.forMessage(attc,'doc',from_who, taken_message[2:].strip() if len(taken_message) != 2 else 'dz'), random.randint(-2147483648, +2147483648)]
+        Api.api('messages.send', names, params)
+    if len(taken_message) == 0:
+        names = ['peer_id', 'attachment', 'random_id']
+        params = [for_id, Api.forMessage(attc,'image',for_id), random.randint(-2147483648, +2147483648)]
+        Api.api('messages.send', names, params)
 
 
 def message(event):
