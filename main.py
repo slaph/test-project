@@ -1,80 +1,82 @@
 import random
-import time
-from files import shikilist
-from files.api import MessageSend
-from files.api import LongPoll
-from datetime import datetime
 import threading
+import logging
 
+from datetime import datetime
+
+from files import shikilist
+from files import MessageSend
+from files import LongPoll
+
+logging.basicConfig(filename="log.log", level=logging.INFO)
+log = logging.getLogger("ex")
 lp = LongPoll()
-rps = 0
-cell_id_list = []
+RPS = 0
 
 
-def object_find_and_send(for_id,from_who, rpS, current_id, taken_message, attc):
+# cell_id_list = []
+
+
+def workWithMessage(PEER_ID, MESSAGE_OWNER_ID, rpS, current_id, taken_message, attc):
     Api = MessageSend()
-    if taken_message.startswith(('добавить', 'в список', 'аниме', 'манга')) and from_who == 532831815:
+    RANDOM_ID = random.randint(-2147483648, +2147483648)
+
+    if taken_message.startswith(('добавить', 'в список', 'аниме', 'манга')):  # или and MESSAGE_OWNER_ID == мой id :
         input_message1 = taken_message.split()
         if input_message1[0] == 'аниме' or input_message1[0] == 'манга':
-            cell_id_list.clear()
-            listtodo = [input_message1[0], '%20'.join(input_message1[1:])]
+            title_to_search = [input_message1[0], '%20'.join(input_message1[1:])]
+            raw_title = shikilist.ItemTitles(title_to_search)
+            INFO_RAW, TITLE_IN_MY_LIST, CELL_ID, TITLE_ID = raw_title.getTitle()
+            # current_id['object'] = TITLE_ID
 
-            test = shikilist.ItemTitles(listtodo)
+            inf_about_title = [*INFO_RAW['name'], str(INFO_RAW['description']), *list(TITLE_IN_MY_LIST.values())]
+            names = ['peer_id', 'message', 'random_id']
 
-            info, titleInMy, cell_id, titleId = test.getTitle()
-            current_id['object'] = titleId
-            inf_about_title = [*info['name'], str(info['description']), *list(titleInMy.values())]
-            cell_id_list.append(cell_id)
-            names = ['peer_id', 'message', 'random_id']  # для ответа в лс должно быть peer_id
-
-            params = [for_id, '\n--------------------\n'.join(inf_about_title),
-                          random.randint(-2147483648, +2147483648)]
-
+            params = [PEER_ID, '\n--------------------\n'.join(inf_about_title), RANDOM_ID]
             Api.api('messages.send', names, params)
 
             rpS += 5
-            # if input_message1[0] == 'в список':
-    if taken_message.startswith('дз'):
-        names = ['peer_id', 'attachment', 'random_id']
-        params = [for_id, Api.forMessage(attc,'doc',from_who, taken_message[2:].strip() if len(taken_message) != 2 else 'dz'), random.randint(-2147483648, +2147483648)]
-        Api.api('messages.send', names, params)
+
+        # if input_message1[0] == 'в список':
+
+    NAMES = ['peer_id', 'attachment', 'random_id']
+    if taken_message.startswith('2pdf'):
+        params = [PEER_ID, Api.forMessage(attc, 'doc', MESSAGE_OWNER_ID,
+                                          taken_message[2:].strip() if len(taken_message) != 4 else 'pdf'), RANDOM_ID]
+        Api.api('messages.send', NAMES, params)
+
     if len(taken_message) == 0:
-        names = ['peer_id', 'attachment', 'random_id']
-        params = [for_id, Api.forMessage(attc,'image',for_id), random.randint(-2147483648, +2147483648)]
-        Api.api('messages.send', names, params)
+        params = [PEER_ID, Api.forMessage(attc), RANDOM_ID]
+        Api.api('messages.send', NAMES, params)
 
 
-def message(event):
-    print(threading.currentThread().getName())
-    start = time.time()
+def inputEvent(event):
     if event['type'] == 'message_new':
-        forid = event["object"]['peer_id']
-        from_id = event["object"]['from_id']
-        #current[event["object"]['from_id']] = 0
-        input_message = event["object"]['text'].lower()
-        att = (event["object"])['attachments']
-        if (len(att) == 0) and (len(event["object"]['fwd_messages']) != 0):
-            att = []
-            for j in event["object"]['fwd_messages']:
-                for h in j['attachments']:
-                    att.append(h)
-            object_find_and_send(forid,0, rps, current, input_message, att)
+        peer_id = event["object"]['peer_id']
+        FROM_ID = event["object"]['from_id']
+        # current[event["object"]['from_id']] = 0
+        INPUT_MESSAGE = event["object"]['text'].lower()
+        ATTACHMENTS = (event["object"])['attachments']
+        if (len(ATTACHMENTS) == 0) and (len(event["object"]['fwd_messages']) != 0):
+            ATTACHMENTS = []
+            for fwd_message in event["object"]['fwd_messages']:
+                for attachment in fwd_message['attachments']:
+                    ATTACHMENTS.append(attachment)
+            workWithMessage(peer_id, FROM_ID, RPS, current, INPUT_MESSAGE, ATTACHMENTS)
         else:
-            object_find_and_send(forid,from_id, rps, current, input_message, att)
-        print(datetime.now())
-        print(time.time() - start)
+            workWithMessage(peer_id, FROM_ID, RPS, current, INPUT_MESSAGE, ATTACHMENTS)
 
 
 current = {}
 while True:
     try:
-        a = lp.longPoll()
-        while len(a) == 0:
-            a = lp.longPoll()
-        event_raw = a[0]
+        response_raw = lp.longPoll()
+        while len(response_raw) == 0:
+            response_raw = lp.longPoll()
+        event_raw = response_raw[0]
         for i in range(1):
-            my_thread = threading.Thread(target=message, daemon=True, args=(event_raw,))
+            my_thread = threading.Thread(target=inputEvent, daemon=True, args=(event_raw,))
             my_thread.start()
 
-    except Exception as e:
-        print(str(e))
+    except Exception:
+        log.exception(f"Error! {datetime.now()}")
