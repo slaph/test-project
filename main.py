@@ -1,3 +1,4 @@
+import asyncio
 import random
 import threading
 import logging
@@ -50,7 +51,7 @@ def workWithMessage(PEER_ID, MESSAGE_OWNER_ID, rpS, current_id, taken_message, a
         Api.api('messages.send', NAMES, params)
 
 
-def inputEvent(event):
+async def inputEvent(event):
     if event['type'] == 'message_new':
         peer_id = event["object"]['peer_id']
         FROM_ID = event["object"]['from_id']
@@ -68,15 +69,19 @@ def inputEvent(event):
 
 
 current = {}
+
+
+async def Long(raw):
+    task = asyncio.create_task(inputEvent(raw))
+    await task
+
+
 while True:
     try:
         response_raw = lp.longPoll()
         while len(response_raw) == 0:
-            response_raw = lp.longPoll()
-        event_raw = response_raw[0]
-        for i in range(1):
-            my_thread = threading.Thread(target=inputEvent, daemon=True, args=(event_raw,))
-            my_thread.start()
+            response_raw = lp.longPoll()[0]
+        asyncio.run(Long(response_raw))
 
     except Exception:
         log.exception(f"Error! {datetime.now()}")
